@@ -3,14 +3,9 @@ import { Metadata, Viewport } from "next";
 
 import { Providers } from "./providers";
 
-import { siteConfig } from "@/config/site";
-
 export const metadata: Metadata = {
-  title: {
-    default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
+  title: "Equity Simulator",
+  description: "Equity Simulator",
   icons: {
     icon: "/favicon.ico",
   },

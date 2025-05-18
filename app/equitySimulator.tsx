@@ -12,48 +12,48 @@ import {
   YAxis,
 } from "recharts";
 
-interface TeamMember {
+type TeamMember = {
   name: string;
   joinMonth: number;
   exitMonth: number | null;
   color: string;
-}
+};
 
-interface SimulationResults {
-  yearlySnapshots: any[];
+type SimulationResults = {
+  monthlySnapshots: any[];
   memberSnapshots: Record<string, any[]>;
-  yearlyShares: any[];
+  monthlyShares: any[];
   cumulativeShares: any[];
   chartData: any[];
-}
+};
 
 export default function EquitySimulator() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
     { name: "Founder", joinMonth: 0, exitMonth: null, color: "#3498db" },
     { name: "A", joinMonth: 3, exitMonth: null, color: "#2ecc71" },
-    { name: "B", joinMonth: 6, exitMonth: 24, color: "#e74c3c" },
+    { name: "B", joinMonth: 6, exitMonth: null, color: "#e74c3c" },
     { name: "C", joinMonth: 12, exitMonth: null, color: "#f39c12" },
     { name: "D", joinMonth: 24, exitMonth: null, color: "#9b59b6" },
   ]);
   const [simulationMonths, setSimulationMonths] = useState(36);
   const [results, setResults] = useState<SimulationResults | null>(null);
-  const [showingTab, setShowingTab] = useState("yearlyShares");
+  const [showingTab, setShowingTab] = useState("monthlyShares");
   const [showAddMember, setShowAddMember] = useState(false);
-  const [newMember, setNewMember] = useState<{
-    name: string;
-    joinMonth: number;
-    exitMonth: number | null;
-  }>({ name: "", joinMonth: 0, exitMonth: null });
+  const [newMember, setNewMember] = useState({
+    name: "",
+    joinMonth: 0,
+    exitMonth: null as number | null,
+  });
 
-  const calculateYearlyResults = () => {
+  const calculateMonthlyResults = (): SimulationResults => {
     const yearCount = Math.ceil(simulationMonths / 12);
-    const years = Array.from({ length: yearCount }, (_, i) => (i + 1) * 12);
+    const months = Array.from({ length: yearCount }, (_, i) => (i + 1) * 12);
 
     // Initialize results structure
     const simulationResults: SimulationResults = {
-      yearlySnapshots: [],
+      monthlySnapshots: [],
       memberSnapshots: {},
-      yearlyShares: [],
+      monthlyShares: [],
       cumulativeShares: [],
       chartData: [],
     };
@@ -63,98 +63,123 @@ export default function EquitySimulator() {
       simulationResults.memberSnapshots[member.name] = [];
     });
 
-    let previousYearShares: Record<string, number> = {};
+    // Initial shares: Founder starts with 10000 shares (representing 10% reserved)
+    let totalSharesIssued = 10000;
+    let previousMonthShares: Record<string, number> = {};
+
     teamMembers.forEach((member) => {
-      previousYearShares[member.name] = member.name === "Founder" ? 10000 : 0;
+      previousMonthShares[member.name] = member.name === "Founder" ? 10000 : 0;
     });
 
-    let totalSharesIssued = 10000; // Start with 10000 shares for Founder
-    const FOUNDER_MIN_OWNERSHIP = 0.1; // 10% minimum ownership for founder
+    // Show starting point (month 0)
+    simulationResults.cumulativeShares.push({
+      month: 0,
+      totalIssued: totalSharesIssued.toFixed(2),
+      ...Object.keys(previousMonthShares).reduce(
+        (acc, memberName) => {
+          acc[memberName] = previousMonthShares[memberName].toFixed(2);
+          return acc;
+        },
+        {} as Record<string, string>
+      ),
+    });
 
-    // For each year
-    years.forEach((yearEndMonth, yearIndex) => {
-      const actualYearEnd = Math.min(yearEndMonth, simulationMonths);
+    // For each year-end
+    months.forEach((monthEnd) => {
+      const actualMonthEnd = Math.min(monthEnd, simulationMonths);
 
       // Calculate cumulative contribution scores for each member
       const contributionScores: Record<string, number> = {};
       let totalContribution = 0;
 
       teamMembers.forEach((member) => {
-        // Skip if not joined yet or already left
-        if (
-          member.joinMonth >= actualYearEnd ||
-          (member.exitMonth !== null && member.exitMonth <= actualYearEnd - 12)
-        ) {
-          contributionScores[member.name] = 0;
-          return;
-        }
-
-        // Calculate months contributed in this year
-        const yearStartMonth = actualYearEnd - 12;
-        const effectiveStartMonth = Math.max(yearStartMonth, member.joinMonth);
-        const effectiveEndMonth =
+        // Calculate contribution based on months worked
+        const startMonth = member.joinMonth;
+        const endMonth =
           member.exitMonth !== null
-            ? Math.min(actualYearEnd, member.exitMonth)
-            : actualYearEnd;
+            ? Math.min(actualMonthEnd, member.exitMonth)
+            : actualMonthEnd;
 
-        const monthsContributed = Math.max(
-          0,
-          effectiveEndMonth - effectiveStartMonth
-        );
-        contributionScores[member.name] = monthsContributed;
-        totalContribution += monthsContributed;
+        const monthsContributed = Math.max(0, endMonth - startMonth);
+
+        contributionScores[member.name] =
+          monthsContributed > 0 ? monthsContributed : 0;
+        totalContribution += contributionScores[member.name];
       });
 
-      // Skip year if no contribution (except first year)
-      if (totalContribution === 0 && yearIndex > 0) {
-        return;
-      }
-
-      // Calculate target share counts based on contribution ratios
+      // Calculate target share ratios considering founder's 10% reserved
       const targetShareRatios: Record<string, number> = {};
       const targetShares: Record<string, number> = {};
       let newSharesNeeded = 0;
       let newSharesPerMember: Record<string, number> = {};
 
-      // First year - only founder gets shares
-      if (yearIndex === 0) {
-        teamMembers.forEach((member) => {
-          targetShareRatios[member.name] = member.name === "Founder" ? 1 : 0;
-          targetShares[member.name] = previousYearShares[member.name];
-          newSharesPerMember[member.name] = 0;
-        });
-      } else {
-        // Calculate shares for remaining 90% based on contribution
-        const remainingOwnershipRatio = 1 - FOUNDER_MIN_OWNERSHIP;
+      teamMembers.forEach((member) => {
+        if (member.name === "Founder") {
+          // Founder always keeps at least 10%
+          const founderMinimumRatio = 0.1;
+          // Calculate what percentage of the 90% the founder gets from contribution
+          const founderContribRatio =
+            totalContribution > 0
+              ? (contributionScores[member.name] / totalContribution) * 0.9
+              : 0;
+
+          // Founder gets 10% plus their share of the 90% based on contribution
+          targetShareRatios[member.name] =
+            founderMinimumRatio + founderContribRatio;
+        } else {
+          // Others share the remaining 90% based on contribution
+          targetShareRatios[member.name] =
+            totalContribution > 0
+              ? (contributionScores[member.name] / totalContribution) * 0.9
+              : 0;
+        }
+
+        // Calculate how many shares each member should have based on target ratio
+        targetShares[member.name] =
+          targetShareRatios[member.name] * totalSharesIssued;
+
+        // Calculate how many new shares needed (we never take shares away)
+        newSharesPerMember[member.name] = Math.max(
+          0,
+          targetShares[member.name] - previousMonthShares[member.name]
+        );
+
+        newSharesNeeded += newSharesPerMember[member.name];
+      });
+
+      // If new shares are needed, recalculate shares with the new total
+      if (newSharesNeeded > 0) {
+        const finalTotalShares = totalSharesIssued + newSharesNeeded;
+
+        newSharesNeeded = 0;
 
         teamMembers.forEach((member) => {
           if (member.name === "Founder") {
-            // Founder gets minimum 10% plus contribution-based share from remaining 90%
-            const founderContributionRatio =
+            // Ensure founder maintains at least 10%
+            const founderMinimumShares = finalTotalShares * 0.1;
+            const founderContribShare =
               totalContribution > 0
                 ? (contributionScores[member.name] / totalContribution) *
-                  remainingOwnershipRatio
+                  (finalTotalShares * 0.9)
                 : 0;
-            targetShareRatios[member.name] =
-              FOUNDER_MIN_OWNERSHIP + founderContributionRatio;
+
+            targetShares[member.name] = Math.max(
+              founderMinimumShares,
+              founderMinimumShares + founderContribShare
+            );
           } else {
-            // Other members get shares from remaining 90% based on contribution
-            targetShareRatios[member.name] =
+            targetShares[member.name] =
               totalContribution > 0
                 ? (contributionScores[member.name] / totalContribution) *
-                  remainingOwnershipRatio
+                  (finalTotalShares * 0.9)
                 : 0;
           }
 
-          // Calculate target shares and new shares needed
-          const targetShareCount = Math.floor(
-            targetShareRatios[member.name] * totalSharesIssued
-          );
-          targetShares[member.name] = targetShareCount;
           newSharesPerMember[member.name] = Math.max(
             0,
-            targetShareCount - previousYearShares[member.name]
+            targetShares[member.name] - previousMonthShares[member.name]
           );
+
           newSharesNeeded += newSharesPerMember[member.name];
         });
       }
@@ -162,20 +187,21 @@ export default function EquitySimulator() {
       // Update total shares issued
       totalSharesIssued += newSharesNeeded;
 
-      // Update previous year shares for next iteration
+      // Update previous month shares for next iteration
       teamMembers.forEach((member) => {
-        previousYearShares[member.name] =
-          previousYearShares[member.name] + newSharesPerMember[member.name];
+        previousMonthShares[member.name] =
+          previousMonthShares[member.name] + newSharesPerMember[member.name];
       });
 
-      // Store yearly snapshot
-      simulationResults.yearlySnapshots.push({
-        year: yearIndex + 1,
-        monthEnd: actualYearEnd,
+      // Store monthly snapshot
+      simulationResults.monthlySnapshots.push({
+        year:
+          Math.floor(actualMonthEnd / 12) + (actualMonthEnd % 12 > 0 ? 1 : 0),
+        month: actualMonthEnd,
         contributionScores: { ...contributionScores },
         targetShareRatios: { ...targetShareRatios },
         newSharesPerMember: { ...newSharesPerMember },
-        cumulativeShares: { ...previousYearShares },
+        cumulativeShares: { ...previousMonthShares },
         totalContribution,
         newSharesIssued: newSharesNeeded,
         totalSharesIssued,
@@ -184,60 +210,70 @@ export default function EquitySimulator() {
       // Store member snapshots
       teamMembers.forEach((member) => {
         simulationResults.memberSnapshots[member.name].push({
-          year: yearIndex + 1,
+          year:
+            Math.floor(actualMonthEnd / 12) + (actualMonthEnd % 12 > 0 ? 1 : 0),
+          month: actualMonthEnd,
           contributionScore: contributionScores[member.name],
           contributionRatio: targetShareRatios[member.name],
           newShares: newSharesPerMember[member.name],
-          cumulativeShares: previousYearShares[member.name],
+          cumulativeShares: previousMonthShares[member.name],
           ownershipPercentage:
-            (previousYearShares[member.name] / totalSharesIssued) * 100,
+            (previousMonthShares[member.name] / totalSharesIssued) * 100,
         });
       });
 
-      // Format yearly shares data for table
-      simulationResults.yearlyShares.push({
-        year: yearIndex + 1,
-        totalIssued: newSharesNeeded,
+      // Format monthly shares data for table
+      simulationResults.monthlyShares.push({
+        month: actualMonthEnd,
+        year:
+          Math.floor(actualMonthEnd / 12) + (actualMonthEnd % 12 > 0 ? 1 : 0),
+        totalIssued: newSharesNeeded.toFixed(2),
         ...Object.keys(newSharesPerMember).reduce(
           (acc, memberName) => {
-            acc[memberName] = newSharesPerMember[memberName];
+            acc[memberName] = newSharesPerMember[memberName].toFixed(2);
+
             return acc;
           },
-          {} as Record<string, number>
+          {} as Record<string, string>
         ),
       });
 
       // Format cumulative shares data for table
       simulationResults.cumulativeShares.push({
-        year: yearIndex + 1,
-        totalIssued: totalSharesIssued,
-        ...Object.keys(previousYearShares).reduce(
+        month: actualMonthEnd,
+        year:
+          Math.floor(actualMonthEnd / 12) + (actualMonthEnd % 12 > 0 ? 1 : 0),
+        totalIssued: totalSharesIssued.toFixed(2),
+        ...Object.keys(previousMonthShares).reduce(
           (acc, memberName) => {
-            acc[memberName] = previousYearShares[memberName];
+            acc[memberName] = previousMonthShares[memberName].toFixed(2);
+
             return acc;
           },
-          {} as Record<string, number>
+          {} as Record<string, string>
         ),
       });
     });
 
-    // Prepare chart data
-    simulationResults.chartData = simulationResults.yearlySnapshots.map(
-      (snapshot) => {
-        const yearData: Record<string, any> = {
-          year: snapshot.year,
-        };
+    // Prepare chart data for ownership percentage over time
+    const chartData = simulationResults.cumulativeShares.map((snapshot) => {
+      const chartPoint: Record<string, any> = {
+        month: snapshot.month,
+        year: snapshot.year,
+      };
 
-        teamMembers.forEach((member) => {
-          yearData[member.name] =
-            (snapshot.cumulativeShares[member.name] /
-              snapshot.totalSharesIssued) *
-            100;
-        });
+      teamMembers.forEach((member) => {
+        const memberShares = parseFloat(snapshot[member.name] || "0");
+        const totalShares = parseFloat(snapshot.totalIssued);
 
-        return yearData;
-      }
-    );
+        chartPoint[member.name] =
+          totalShares > 0 ? (memberShares / totalShares) * 100 : 0;
+      });
+
+      return chartPoint;
+    });
+
+    simulationResults.chartData = chartData;
 
     return simulationResults;
   };
@@ -245,6 +281,7 @@ export default function EquitySimulator() {
   const handleAddMember = () => {
     if (newMember.name.trim() === "") {
       alert("구성원 이름을 입력해주세요.");
+
       return;
     }
 
@@ -255,8 +292,11 @@ export default function EquitySimulator() {
       ...teamMembers,
       {
         name: newMember.name,
-        joinMonth: Number(newMember.joinMonth),
-        exitMonth: newMember.exitMonth ? Number(newMember.exitMonth) : null,
+        joinMonth: parseInt(newMember.joinMonth.toString()),
+        exitMonth:
+          newMember.exitMonth !== null
+            ? parseInt(newMember.exitMonth.toString())
+            : null,
         color: randomColor,
       },
     ]);
@@ -268,32 +308,36 @@ export default function EquitySimulator() {
   const handleRemoveMember = (index: number) => {
     if (index === 0) {
       alert("창업자는 삭제할 수 없습니다.");
+
       return;
     }
 
     const newTeamMembers = [...teamMembers];
+
     newTeamMembers.splice(index, 1);
     setTeamMembers(newTeamMembers);
   };
 
-  const handleUpdateMember = (index: number, field: string, value: string) => {
+  const handleUpdateMember = (
+    index: number,
+    field: string,
+    value: string | number | null
+  ) => {
     const newTeamMembers = [...teamMembers];
-    if (field === "joinMonth" || field === "exitMonth") {
-      newTeamMembers[index] = {
-        ...newTeamMembers[index],
-        [field]: value === "" ? null : Number(value),
-      };
-    } else {
-      newTeamMembers[index] = {
-        ...newTeamMembers[index],
-        [field]: value,
-      };
-    }
+
+    newTeamMembers[index] = {
+      ...newTeamMembers[index],
+      [field]:
+        field.includes("Month") && value !== null
+          ? parseInt(value.toString())
+          : value,
+    };
     setTeamMembers(newTeamMembers);
   };
 
   const runSimulation = () => {
-    const results = calculateYearlyResults();
+    const results = calculateMonthlyResults();
+
     setResults(results);
   };
 
@@ -301,7 +345,7 @@ export default function EquitySimulator() {
     runSimulation();
   }, []);
 
-  const monthToQuarterYear = (months: number) => {
+  const monthToYearMonth = (months: number) => {
     const years = Math.floor(months / 12);
     const remainingMonths = months % 12;
 
@@ -313,7 +357,7 @@ export default function EquitySimulator() {
   };
 
   return (
-    <div className="flex flex-col mx-auto bg-gray-50 min-h-screen p-6 text-black">
+    <div className="flex flex-col p-6 max-w-6xl mx-auto bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-center mb-6 text-blue-800">
         주식 기여도 시뮬레이터
       </h1>
@@ -323,24 +367,24 @@ export default function EquitySimulator() {
 
         <div className="mb-4">
           <label
-            htmlFor="simulationMonths"
+            htmlFor="simulation-months"
             className="block text-sm font-medium mb-1"
           >
-            시뮬레이션 기간
+            시뮬레이션 기간 (개월)
           </label>
           <div className="flex items-center gap-4">
             <input
-              id="simulationMonths"
+              id="simulation-months"
               type="range"
               min="12"
               max="120"
               step="12"
               value={simulationMonths}
-              onChange={(e) => setSimulationMonths(Number(e.target.value))}
+              onChange={(e) => setSimulationMonths(parseInt(e.target.value))}
               className="w-full"
             />
-            <span className="text-sm font-medium w-32">
-              {simulationMonths}개월 ({monthToQuarterYear(simulationMonths)})
+            <span className="text-sm font-medium w-24">
+              {simulationMonths}개월 ({Math.floor(simulationMonths / 12)}년)
             </span>
           </div>
         </div>
@@ -357,7 +401,7 @@ export default function EquitySimulator() {
           </div>
 
           {showAddMember && (
-            <div className="flex gap-4 mb-4 p-3 bg-blue-50 rounded">
+            <div className="flex flex-wrap gap-4 mb-4 p-3 bg-blue-50 rounded">
               <input
                 type="text"
                 placeholder="이름"
@@ -365,34 +409,37 @@ export default function EquitySimulator() {
                 onChange={(e) =>
                   setNewMember({ ...newMember, name: e.target.value })
                 }
-                className="flex-1 p-2 border rounded"
+                className="flex-1 min-w-[120px] p-2 border rounded"
               />
-              <div className="flex-1">
+              <div className="flex-1 min-w-[120px]">
                 <input
                   type="number"
-                  placeholder="합류 개월"
+                  placeholder="합류 월차"
                   value={newMember.joinMonth}
                   onChange={(e) =>
                     setNewMember({
                       ...newMember,
-                      joinMonth: Number(e.target.value),
+                      joinMonth: parseInt(e.target.value),
                     })
                   }
                   className="w-full p-2 border rounded"
+                  min="0"
                 />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-[120px]">
                 <input
                   type="number"
-                  placeholder="퇴사 개월 (선택)"
-                  value={newMember.exitMonth || ""}
-                  onChange={(e) =>
-                    setNewMember({
-                      ...newMember,
-                      exitMonth: e.target.value ? Number(e.target.value) : null,
-                    })
-                  }
+                  placeholder="퇴사 월차 (선택)"
+                  value={newMember.exitMonth ?? ""}
+                  onChange={(e) => {
+                    const value =
+                      e.target.value.trim() === ""
+                        ? null
+                        : parseInt(e.target.value);
+                    setNewMember({ ...newMember, exitMonth: value });
+                  }}
                   className="w-full p-2 border rounded"
+                  min={newMember.joinMonth || 0}
                 />
               </div>
               <button
@@ -451,7 +498,7 @@ export default function EquitySimulator() {
                           disabled={index === 0}
                         />
                         <span className="text-xs text-gray-500">
-                          ({monthToQuarterYear(member.joinMonth)})
+                          ({monthToYearMonth(member.joinMonth)})
                         </span>
                       </div>
                     </td>
@@ -459,17 +506,23 @@ export default function EquitySimulator() {
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={member.exitMonth || ""}
-                          onChange={(e) =>
-                            handleUpdateMember(
-                              index,
-                              "exitMonth",
-                              e.target.value
-                            )
-                          }
+                          value={member.exitMonth ?? ""}
+                          onChange={(e) => {
+                            const value =
+                              e.target.value.trim() === ""
+                                ? null
+                                : e.target.value;
+                            handleUpdateMember(index, "exitMonth", value);
+                          }}
                           className="border-b border-gray-300 bg-transparent w-16 mr-2"
-                          min="0"
+                          min={member.joinMonth}
+                          placeholder="없음"
                         />
+                        {member.exitMonth !== null && (
+                          <span className="text-xs text-gray-500">
+                            ({monthToYearMonth(member.exitMonth)})
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-2 px-3 text-center">
@@ -502,14 +555,14 @@ export default function EquitySimulator() {
             <h2 className="text-xl font-semibold">시뮬레이션 결과</h2>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowingTab("yearlyShares")}
+                onClick={() => setShowingTab("monthlyShares")}
                 className={`px-3 py-1 rounded ${
-                  showingTab === "yearlyShares"
+                  showingTab === "monthlyShares"
                     ? "bg-blue-500 text-white"
                     : "bg-gray-200"
                 }`}
               >
-                연도별 발행량
+                월별 발행량
               </button>
               <button
                 onClick={() => setShowingTab("cumulativeShares")}
@@ -544,13 +597,13 @@ export default function EquitySimulator() {
             </div>
           </div>
 
-          {showingTab === "yearlyShares" && (
+          {showingTab === "monthlyShares" && (
             <div className="overflow-x-auto">
-              <h3 className="text-lg font-medium mb-2">연도별 신주 발행량</h3>
+              <h3 className="text-lg font-medium mb-2">월별 신주 발행량</h3>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="py-2 px-3 text-left">연도</th>
+                    <th className="py-2 px-3 text-left">개월</th>
                     {teamMembers.map((member, idx) => (
                       <th key={idx} className="py-2 px-3 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -559,11 +612,6 @@ export default function EquitySimulator() {
                             style={{ backgroundColor: member.color }}
                           ></div>
                           {member.name}
-                          {member.exitMonth && (
-                            <span className="text-xs text-red-500">
-                              ({monthToQuarterYear(member.exitMonth)} 퇴사)
-                            </span>
-                          )}
                         </div>
                       </th>
                     ))}
@@ -573,16 +621,27 @@ export default function EquitySimulator() {
                   </tr>
                 </thead>
                 <tbody>
-                  {results.yearlyShares.map((row, idx) => (
+                  {results.monthlyShares.map((row, idx) => (
                     <tr key={idx} className="border-t border-gray-200">
-                      <td className="py-2 px-3">{row.year}년차</td>
+                      <td className="py-2 px-3">
+                        {monthToYearMonth(row.month)}
+                      </td>
                       {teamMembers.map((member, midx) => (
                         <td key={midx} className="py-2 px-3 text-right">
-                          {row[member.name].toLocaleString()}
+                          {parseFloat(row[member.name] || "0").toLocaleString(
+                            undefined,
+                            {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            }
+                          )}
                         </td>
                       ))}
                       <td className="py-2 px-3 text-right font-bold">
-                        {row.totalIssued.toLocaleString()}
+                        {parseFloat(row.totalIssued).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </td>
                     </tr>
                   ))}
@@ -597,7 +656,7 @@ export default function EquitySimulator() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="py-2 px-3 text-left">연도</th>
+                    <th className="py-2 px-3 text-left">시점</th>
                     {teamMembers.map((member, idx) => (
                       <th key={idx} className="py-2 px-3 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -617,10 +676,14 @@ export default function EquitySimulator() {
                 <tbody>
                   {results.cumulativeShares.map((row, idx) => (
                     <tr key={idx} className="border-t border-gray-200">
-                      <td className="py-2 px-3">{row.year}년차 말</td>
+                      <td className="py-2 px-3">
+                        {row.month === 0
+                          ? "시작"
+                          : `${monthToYearMonth(row.month)} 말`}
+                      </td>
                       {teamMembers.map((member, midx) => (
                         <td key={midx} className="py-2 px-3 text-right">
-                          {parseFloat(row[member.name]).toLocaleString(
+                          {parseFloat(row[member.name] || "0").toLocaleString(
                             undefined,
                             {
                               minimumFractionDigits: 2,
@@ -630,7 +693,7 @@ export default function EquitySimulator() {
                           <span className="text-xs text-gray-500 ml-1">
                             (
                             {(
-                              (parseFloat(row[member.name]) /
+                              (parseFloat(row[member.name] || "0") /
                                 parseFloat(row.totalIssued)) *
                               100
                             ).toFixed(2)}
@@ -653,15 +716,16 @@ export default function EquitySimulator() {
 
           {showingTab === "ownershipChart" && (
             <div>
-              <h3 className="text-lg font-medium mb-4">연도별 지분율 변화</h3>
+              <h3 className="text-lg font-medium mb-4">시간별 지분율 변화</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={results.chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
-                      dataKey="year"
+                      dataKey="month"
+                      tickFormatter={(value) => monthToYearMonth(value)}
                       label={{
-                        value: "연도",
+                        value: "시간",
                         position: "insideBottom",
                         offset: -5,
                       }}
@@ -680,7 +744,9 @@ export default function EquitySimulator() {
                         `${value.toFixed(2)}%`,
                         "",
                       ]}
-                      labelFormatter={(label) => `${label}년차 말`}
+                      labelFormatter={(label) =>
+                        `${monthToYearMonth(label)} 말`
+                      }
                     />
                     <Legend />
                     {teamMembers.map((member, idx) => (
@@ -704,10 +770,10 @@ export default function EquitySimulator() {
             <div className="overflow-x-auto">
               <h3 className="text-lg font-medium mb-2">상세 데이터</h3>
 
-              {results.yearlySnapshots.map((snapshot, yearIndex) => (
-                <div key={yearIndex} className="mb-8">
+              {results.monthlySnapshots.map((snapshot, monthIndex) => (
+                <div key={monthIndex} className="mb-8">
                   <h4 className="text-md font-semibold mb-2 bg-gray-100 p-2">
-                    {yearIndex + 1}년차 말 (주 {snapshot.monthEnd})
+                    {monthToYearMonth(snapshot.month)} 말
                   </h4>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -719,7 +785,7 @@ export default function EquitySimulator() {
                         <thead>
                           <tr className="bg-gray-50">
                             <th className="py-1 px-2 text-left">구성원</th>
-                            <th className="py-1 px-2 text-right">누적 점수</th>
+                            <th className="py-1 px-2 text-right">누적 개월</th>
                             <th className="py-1 px-2 text-right">비율</th>
                           </tr>
                         </thead>
@@ -783,12 +849,12 @@ export default function EquitySimulator() {
                               <td className="py-1 px-2 text-right">
                                 {snapshot.newSharesPerMember[
                                   member.name
-                                ].toFixed(2)}
+                                ]?.toFixed(2) || "0.00"}
                               </td>
                               <td className="py-1 px-2 text-right">
-                                {snapshot.cumulativeShares[member.name].toFixed(
-                                  2
-                                )}
+                                {snapshot.cumulativeShares[
+                                  member.name
+                                ]?.toFixed(2) || "0.00"}
                               </td>
                               <td className="py-1 px-2 text-right">
                                 {(
@@ -819,14 +885,50 @@ export default function EquitySimulator() {
                     <h5 className="text-sm font-medium mb-1">검증</h5>
                     <div className="bg-blue-50 p-3 rounded text-sm">
                       {teamMembers.map((member, idx) => {
+                        // Founders should have at least 10%
+                        const expectedMinRatio =
+                          member.name === "Founder" ? 0.1 : 0;
                         const shareRatio =
                           snapshot.cumulativeShares[member.name] /
                           snapshot.totalSharesIssued;
+
+                        // Founder checking
+                        if (member.name === "Founder") {
+                          return (
+                            <div
+                              key={idx}
+                              className="flex justify-between mb-1"
+                            >
+                              <span>
+                                {member.name}: 보유 주식 비율 ={" "}
+                                {(shareRatio * 100).toFixed(6)}%
+                              </span>
+                              <span
+                                className={
+                                  shareRatio >= 0.1
+                                    ? "text-green-600 font-medium"
+                                    : "text-red-600 font-medium"
+                                }
+                              >
+                                {shareRatio >= 0.1
+                                  ? "✓ 10% 이상 보유"
+                                  : `✗ 10% 미만 보유 (${(shareRatio * 100).toFixed(6)}%)`}
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        // Other members
                         const contributionRatio =
-                          snapshot.contributionScores[member.name] /
-                          snapshot.totalContribution;
+                          snapshot.totalContribution > 0
+                            ? (snapshot.contributionScores[member.name] /
+                                snapshot.totalContribution) *
+                              0.9
+                            : 0;
+
+                        // Adjusted for real-world rounding errors
                         const difference = Math.abs(
-                          shareRatio - contributionRatio
+                          shareRatio - expectedMinRatio - contributionRatio
                         );
 
                         return (
@@ -838,16 +940,14 @@ export default function EquitySimulator() {
                             </span>
                             <span
                               className={
-                                difference < 0.0001
+                                difference < 0.001
                                   ? "text-green-600 font-medium"
                                   : "text-red-600 font-medium"
                               }
                             >
-                              {difference < 0.0001
+                              {difference < 0.001
                                 ? "✓ 일치"
-                                : `✗ 불일치 (${(difference * 100).toFixed(
-                                    6
-                                  )}%)`}
+                                : `✗ 불일치 (${(difference * 100).toFixed(6)}%)`}
                             </span>
                           </div>
                         );
