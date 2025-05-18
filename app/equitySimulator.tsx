@@ -28,16 +28,17 @@ type SimulationResults = {
 };
 
 const FIXED_FOUNDER_RATIO = 0.1;
+const DEFAULT_NEW_SHARES = 1000;
 
 export default function EquitySimulator() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
     { name: "Founder", joinMonth: 0, exitMonth: null, color: "#3498db" },
     { name: "A", joinMonth: 3, exitMonth: null, color: "#2ecc71" },
-    { name: "B", joinMonth: 6, exitMonth: null, color: "#e74c3c" },
+    { name: "B", joinMonth: 4, exitMonth: 16, color: "#e74c3c" },
     { name: "C", joinMonth: 12, exitMonth: null, color: "#f39c12" },
-    { name: "D", joinMonth: 24, exitMonth: null, color: "#9b59b6" },
+    { name: "D", joinMonth: 27, exitMonth: null, color: "#9b59b6" },
   ]);
-  const [simulationMonths, setSimulationMonths] = useState(36);
+  const [simulationMonths, setSimulationMonths] = useState(60);
   const [results, setResults] = useState<SimulationResults | null>(null);
   const [showingTab, setShowingTab] = useState("monthlyShares");
   const [showAddMember, setShowAddMember] = useState(false);
@@ -65,12 +66,12 @@ export default function EquitySimulator() {
       simulationResults.memberSnapshots[member.name] = [];
     });
 
-    // Initial shares: Founder starts with 10000 shares (representing 10% reserved)
-    let totalSharesIssued = 10000;
+    let totalSharesIssued = DEFAULT_NEW_SHARES;
     let previousMonthShares: Record<string, number> = {};
 
     teamMembers.forEach((member) => {
-      previousMonthShares[member.name] = member.name === "Founder" ? 10000 : 0;
+      previousMonthShares[member.name] =
+        member.name === "Founder" ? DEFAULT_NEW_SHARES : 0;
     });
 
     // Show starting point (month 0)
@@ -105,7 +106,7 @@ export default function EquitySimulator() {
         const monthsContributed = Math.max(0, endMonth - startMonth);
 
         contributionScores[member.name] =
-          monthsContributed > 0 ? monthsContributed : 0;
+          monthsContributed >= 12 ? monthsContributed : 0;
         totalContribution += contributionScores[member.name];
       });
 
@@ -122,12 +123,11 @@ export default function EquitySimulator() {
           const founderContribRatio =
             totalContribution > 0
               ? (contributionScores[member.name] / totalContribution) *
-                (1 - FIXED_FOUNDER_RATIO)
-              : 0;
+                  (1 - FIXED_FOUNDER_RATIO) +
+                FIXED_FOUNDER_RATIO
+              : 1;
 
-          // Founder gets 10% plus their share of the 90% based on contribution
-          targetShareRatios[member.name] =
-            FIXED_FOUNDER_RATIO + founderContribRatio;
+          targetShareRatios[member.name] = founderContribRatio;
         } else {
           // Others share the remaining 90% based on contribution
           targetShareRatios[member.name] =
@@ -138,8 +138,13 @@ export default function EquitySimulator() {
         }
       });
 
-      totalSharesIssued = Math.round(
-        previousMonthShares["Founder"] / targetShareRatios["Founder"]
+      totalSharesIssued = Math.max(
+        Math.round(
+          previousMonthShares["Founder"] / targetShareRatios["Founder"]
+        ),
+        totalContribution > 0
+          ? totalSharesIssued + DEFAULT_NEW_SHARES
+          : totalSharesIssued
       );
 
       // Calculate how many shares each member should have based on target ratio
@@ -338,14 +343,15 @@ export default function EquitySimulator() {
             정책 사항
           </h2>
           <ul className="list-disc pl-5 space-y-2 text-sm">
-            <li>창업 시 창업자는 10,000주 보유 (100%)</li>
+            <li>창업 시 창업자는 1,000주 보유 (100%)</li>
             <li>대표(창업자) 고정 지분 10%</li>
             <li>나머지 90%는 모든 구성원의 기여도에 따라 분배</li>
-            <li>기여도는 근무 개월 수로 측정</li>
+            <li>기여도는 근무 개월 수로 측정 (1년 이하 X)</li>
             <li>
               연말마다 모든 구성원의 주식 비율을 누적 기여도 비율에 맞추기 위해
-              신주 발행 후 분배
+              신주 발행 후 분배 (최소 1,000주 이상)
             </li>
+            <li>1년 이상 근무 구성원 대상</li>
             <li>이미 발행된 주식은 회수하지 않음</li>
             <li>퇴사자는 퇴사 시점까지만 기여도 인정</li>
           </ul>
