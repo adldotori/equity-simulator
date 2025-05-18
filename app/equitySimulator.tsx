@@ -332,34 +332,81 @@ export default function EquitySimulator() {
   };
 
   return (
-    <div className="flex flex-col p-6 max-w-6xl mx-auto bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-center mb-6 text-blue-800">
+    <div className="flex flex-col p-3 sm:p-6 max-w-6xl mx-auto bg-gray-50 min-h-screen">
+      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-blue-800">
         주식 분배 시뮬레이터
       </h1>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-64 bg-white p-4 rounded-lg shadow-md self-start sticky top-6">
-          <h2 className="text-lg font-semibold mb-3 text-blue-800 border-b pb-2">
-            정책 사항
+      <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
+        <div className="md:w-64 bg-white p-3 sm:p-4 rounded-lg shadow-md self-start">
+          <h2 className="text-lg font-semibold mb-2 sm:mb-3 text-blue-800 pb-2 flex justify-between items-center">
+            <span>정책 사항</span>
           </h2>
-          <ul className="list-disc pl-5 space-y-2 text-sm">
-            <li>창업 시 창업자는 1,000주 보유 (100%)</li>
-            <li>대표(창업자) 고정 지분 10%</li>
-            <li>나머지 90%는 모든 구성원의 기여도에 따라 분배</li>
-            <li>기여도는 근무 개월 수로 측정 (1년 이하 X)</li>
-            <li>
-              연말마다 모든 구성원의 주식 비율을 누적 기여도 비율에 맞추기 위해
-              신주 발행 후 분배 (최소 1,000주 이상)
-            </li>
-            <li>1년 이상 근무 구성원 대상</li>
-            <li>이미 발행된 주식은 회수하지 않음</li>
-            <li>퇴사자는 퇴사 시점까지만 기여도 인정</li>
-          </ul>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs sm:text-sm mb-3 border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="py-1 px-2 text-left border">요소</th>
+                  <th className="py-1 px-2 text-left border">구조</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="py-1 px-2 border">지분 구조</td>
+                  <td className="py-1 px-2 border">
+                    창업자 1,000주 보유로 시작, 이후 매년 신주 발행으로 희석
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1 px-2 border">대표 고정 지분</td>
+                  <td className="py-1 px-2 border">
+                    전체 지분의 <strong>10% 고정</strong> (대표 교체되어도 유지)
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1 px-2 border">팀원 지분</td>
+                  <td className="py-1 px-2 border">
+                    1년 이상 근무자에 한해 <strong>근무 개월 수 비례</strong>로
+                    분배
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1 px-2 border">기여 측정</td>
+                  <td className="py-1 px-2 border">
+                    개인 성과 아닌 <strong>근무 기간 (월 단위)</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1 px-2 border">신주 발행</td>
+                  <td className="py-1 px-2 border">
+                    연말마다 지분 불균형을 보정하기 위해{" "}
+                    <strong>최소 1,000주 이상</strong> 신주 발행
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1 px-2 border">퇴사자</td>
+                  <td className="py-1 px-2 border">
+                    퇴사 시점까지의 지분은 유지, 이후 신주 발행 대상에서 제외
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1 px-2 border">의사결정</td>
+                  <td className="py-1 px-2 border">
+                    <strong>과반 지분 합의</strong>로만 전략적 결정 가능 (대표
+                    포함)
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="flex-1">
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-semibold mb-4">팀 구성 및 설정</h2>
+          <div className="bg-white p-3 sm:p-6 rounded-lg shadow-md mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+              팀 구성 및 설정
+            </h2>
 
             <div className="mb-4">
               <label
@@ -368,7 +415,7 @@ export default function EquitySimulator() {
               >
                 시뮬레이션 기간 (개월)
               </label>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 <input
                   id="simulation-months"
                   type="range"
@@ -381,7 +428,7 @@ export default function EquitySimulator() {
                   }
                   className="w-full"
                 />
-                <span className="text-sm font-medium whitespace-nowrap">
+                <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
                   {simulationMonths}개월 ({Math.floor(simulationMonths / 12)}년)
                 </span>
               </div>
@@ -389,17 +436,17 @@ export default function EquitySimulator() {
 
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="text-md font-medium">팀 구성원</h3>
+                <h3 className="text-sm sm:text-md font-medium">팀 구성원</h3>
                 <button
                   onClick={() => setShowAddMember(!showAddMember)}
-                  className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                  className="text-xs sm:text-sm bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1 rounded"
                 >
                   {showAddMember ? "취소" : "구성원 추가"}
                 </button>
               </div>
 
               {showAddMember && (
-                <div className="flex flex-wrap gap-4 mb-4 p-3 bg-blue-50 rounded">
+                <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 p-2 sm:p-3 bg-blue-50 rounded">
                   <input
                     type="text"
                     placeholder="이름"
@@ -407,9 +454,9 @@ export default function EquitySimulator() {
                     onChange={(e) =>
                       setNewMember({ ...newMember, name: e.target.value })
                     }
-                    className="flex-1 min-w-[120px] p-2 border rounded"
+                    className="flex-1 min-w-[100px] sm:min-w-[120px] p-1 sm:p-2 border rounded text-sm"
                   />
-                  <div className="flex-1 min-w-[120px]">
+                  <div className="flex-1 min-w-[100px] sm:min-w-[120px]">
                     <input
                       type="number"
                       placeholder="합류 월차"
@@ -420,11 +467,11 @@ export default function EquitySimulator() {
                           joinMonth: parseInt(e.target.value),
                         })
                       }
-                      className="w-full p-2 border rounded"
+                      className="w-full p-1 sm:p-2 border rounded text-sm"
                       min="0"
                     />
                   </div>
-                  <div className="flex-1 min-w-[120px]">
+                  <div className="flex-1 min-w-[100px] sm:min-w-[120px]">
                     <input
                       type="number"
                       placeholder="퇴사 월차 (선택)"
@@ -436,13 +483,13 @@ export default function EquitySimulator() {
                             : parseInt(e.target.value);
                         setNewMember({ ...newMember, exitMonth: value });
                       }}
-                      className="w-full p-2 border rounded"
+                      className="w-full p-1 sm:p-2 border rounded text-sm"
                       min={newMember.joinMonth || 0}
                     />
                   </div>
                   <button
                     onClick={handleAddMember}
-                    className="bg-green-500 hover:bg-green-600 text-white px-4 rounded"
+                    className="bg-green-500 hover:bg-green-600 text-white px-2 sm:px-4 py-1 rounded text-sm"
                   >
                     추가
                   </button>
@@ -450,22 +497,30 @@ export default function EquitySimulator() {
               )}
 
               <div className="bg-gray-100 rounded overflow-hidden">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs sm:text-sm">
                   <thead>
                     <tr className="bg-gray-200">
-                      <th className="py-2 px-3 text-left">이름</th>
-                      <th className="py-2 px-3 text-left">합류 시점</th>
-                      <th className="py-2 px-3 text-left">퇴사 시점</th>
-                      <th className="py-2 px-3 text-center w-16">액션</th>
+                      <th className="py-1 sm:py-2 px-1 sm:px-3 text-left">
+                        이름
+                      </th>
+                      <th className="py-1 sm:py-2 px-1 sm:px-3 text-left">
+                        합류 시점
+                      </th>
+                      <th className="py-1 sm:py-2 px-1 sm:px-3 text-left">
+                        퇴사 시점
+                      </th>
+                      <th className="py-1 sm:py-2 px-1 sm:px-3 text-center w-10 sm:w-16">
+                        액션
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {teamMembers.map((member, index) => (
                       <tr key={index} className="border-t border-gray-200">
-                        <td className="py-2 px-3">
-                          <div className="flex items-center gap-2">
+                        <td className="py-1 sm:py-2 px-1 sm:px-3">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <div
-                              className="w-3 h-3 rounded-full"
+                              className="w-2 sm:w-3 h-2 sm:h-3 rounded-full"
                               style={{ backgroundColor: member.color }}
                             ></div>
                             <input
@@ -478,13 +533,13 @@ export default function EquitySimulator() {
                                   e.target.value
                                 )
                               }
-                              className="border-b border-gray-300 bg-transparent w-full"
+                              className="border-b border-gray-300 bg-transparent w-full text-xs sm:text-sm"
                               disabled={index === 0}
                             />
                           </div>
                         </td>
-                        <td className="py-2 px-3">
-                          <div className="flex items-center gap-2">
+                        <td className="py-1 sm:py-2 px-1 sm:px-3">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <input
                               type="number"
                               value={member.joinMonth}
@@ -495,17 +550,17 @@ export default function EquitySimulator() {
                                   e.target.value
                                 )
                               }
-                              className="border-b border-gray-300 bg-transparent w-16 mr-2"
+                              className="border-b border-gray-300 bg-transparent w-12 sm:w-16 mr-1 sm:mr-2 text-xs sm:text-sm"
                               min="0"
                               disabled={index === 0}
                             />
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 hidden sm:inline">
                               ({monthToYearMonth(member.joinMonth)})
                             </span>
                           </div>
                         </td>
-                        <td className="py-2 px-3">
-                          <div className="flex items-center gap-2">
+                        <td className="py-1 sm:py-2 px-1 sm:px-3">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <input
                               type="number"
                               value={member.exitMonth ?? ""}
@@ -516,13 +571,13 @@ export default function EquitySimulator() {
                                     : e.target.value;
                                 handleUpdateMember(index, "exitMonth", value);
                               }}
-                              className="border-b border-gray-300 bg-transparent w-16 mr-2"
+                              className="border-b border-gray-300 bg-transparent w-12 sm:w-16 mr-1 sm:mr-2 text-xs sm:text-sm"
                               min={member.joinMonth}
                               placeholder="없음"
                             />
                             {member.exitMonth !== null && (
-                              <span className="text-xs text-gray-500">
-                                근무 기간: (
+                              <span className="text-xs text-gray-500 hidden sm:inline">
+                                근무: (
                                 {monthToYearMonth(
                                   member.exitMonth - member.joinMonth
                                 )}
@@ -531,10 +586,10 @@ export default function EquitySimulator() {
                             )}
                           </div>
                         </td>
-                        <td className="py-2 px-3 text-center">
+                        <td className="py-1 sm:py-2 px-1 sm:px-3 text-center">
                           <button
                             onClick={() => handleRemoveMember(index)}
-                            className="text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700 text-xs sm:text-sm"
                             disabled={index === 0}
                           >
                             {index !== 0 ? "삭제" : ""}
@@ -549,20 +604,22 @@ export default function EquitySimulator() {
 
             <button
               onClick={runSimulation}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-medium"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1 sm:py-2 rounded-md font-medium text-sm"
             >
               시뮬레이션 실행
             </button>
           </div>
 
           {results && (
-            <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">시뮬레이션 결과</h2>
-                <div className="flex gap-2">
+            <div className="bg-white p-3 sm:p-6 rounded-lg shadow-md mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                <h2 className="text-lg sm:text-xl font-semibold">
+                  시뮬레이션 결과
+                </h2>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
                   <button
                     onClick={() => setShowingTab("monthlyShares")}
-                    className={`px-3 py-1 rounded ${
+                    className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${
                       showingTab === "monthlyShares"
                         ? "bg-blue-500 text-white"
                         : "bg-gray-200"
@@ -572,7 +629,7 @@ export default function EquitySimulator() {
                   </button>
                   <button
                     onClick={() => setShowingTab("cumulativeShares")}
-                    className={`px-3 py-1 rounded ${
+                    className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${
                       showingTab === "cumulativeShares"
                         ? "bg-blue-500 text-white"
                         : "bg-gray-200"
@@ -582,7 +639,7 @@ export default function EquitySimulator() {
                   </button>
                   <button
                     onClick={() => setShowingTab("ownershipChart")}
-                    className={`px-3 py-1 rounded ${
+                    className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${
                       showingTab === "ownershipChart"
                         ? "bg-blue-500 text-white"
                         : "bg-gray-200"
@@ -592,7 +649,7 @@ export default function EquitySimulator() {
                   </button>
                   <button
                     onClick={() => setShowingTab("detailData")}
-                    className={`px-3 py-1 rounded ${
+                    className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${
                       showingTab === "detailData"
                         ? "bg-blue-500 text-white"
                         : "bg-gray-200"
@@ -605,23 +662,32 @@ export default function EquitySimulator() {
 
               {showingTab === "monthlyShares" && (
                 <div className="overflow-x-auto">
-                  <h3 className="text-lg font-medium mb-2">연간 신주 발행량</h3>
-                  <table className="w-full text-sm">
+                  <h3 className="text-base sm:text-lg font-medium mb-2">
+                    연간 신주 발행량
+                  </h3>
+                  <table className="w-full text-xs sm:text-sm">
                     <thead>
                       <tr className="bg-gray-100">
-                        <th className="py-2 px-3 text-left">연차</th>
+                        <th className="py-1 sm:py-2 px-1 sm:px-3 text-left">
+                          연차
+                        </th>
                         {teamMembers.map((member, idx) => (
-                          <th key={idx} className="py-2 px-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                          <th
+                            key={idx}
+                            className="py-1 sm:py-2 px-1 sm:px-3 text-right"
+                          >
+                            <div className="flex items-center justify-end gap-1 sm:gap-2">
                               <div
-                                className="w-3 h-3 rounded-full"
+                                className="w-2 sm:w-3 h-2 sm:h-3 rounded-full"
                                 style={{ backgroundColor: member.color }}
                               ></div>
-                              {member.name}
+                              <span className="whitespace-nowrap">
+                                {member.name}
+                              </span>
                             </div>
                           </th>
                         ))}
-                        <th className="py-2 px-3 text-right font-bold">
+                        <th className="py-1 sm:py-2 px-1 sm:px-3 text-right font-bold">
                           총 발행량
                         </th>
                       </tr>
@@ -629,15 +695,18 @@ export default function EquitySimulator() {
                     <tbody>
                       {results.monthlyShares.map((row, idx) => (
                         <tr key={idx} className="border-t border-gray-200">
-                          <td className="py-2 px-3">
+                          <td className="py-1 sm:py-2 px-1 sm:px-3">
                             {monthToYearMonth(row.month)}
                           </td>
                           {teamMembers.map((member, midx) => (
-                            <td key={midx} className="py-2 px-3 text-right">
+                            <td
+                              key={midx}
+                              className="py-1 sm:py-2 px-1 sm:px-3 text-right"
+                            >
                               {parseInt(row[member.name] || "0")}
                             </td>
                           ))}
-                          <td className="py-2 px-3 text-right font-bold">
+                          <td className="py-1 sm:py-2 px-1 sm:px-3 text-right font-bold">
                             {parseInt(row.totalIssued)}
                           </td>
                         </tr>
@@ -649,23 +718,32 @@ export default function EquitySimulator() {
 
               {showingTab === "cumulativeShares" && (
                 <div className="overflow-x-auto">
-                  <h3 className="text-lg font-medium mb-2">누적 주식 수</h3>
-                  <table className="w-full text-sm">
+                  <h3 className="text-base sm:text-lg font-medium mb-2">
+                    누적 주식 수
+                  </h3>
+                  <table className="w-full text-xs sm:text-sm">
                     <thead>
                       <tr className="bg-gray-100">
-                        <th className="py-2 px-3 text-left">시점</th>
+                        <th className="py-1 sm:py-2 px-1 sm:px-3 text-left">
+                          시점
+                        </th>
                         {teamMembers.map((member, idx) => (
-                          <th key={idx} className="py-2 px-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                          <th
+                            key={idx}
+                            className="py-1 sm:py-2 px-1 sm:px-3 text-right"
+                          >
+                            <div className="flex items-center justify-end gap-1 sm:gap-2">
                               <div
-                                className="w-3 h-3 rounded-full"
+                                className="w-2 sm:w-3 h-2 sm:h-3 rounded-full"
                                 style={{ backgroundColor: member.color }}
                               ></div>
-                              {member.name}
+                              <span className="whitespace-nowrap">
+                                {member.name}
+                              </span>
                             </div>
                           </th>
                         ))}
-                        <th className="py-2 px-3 text-right font-bold">
+                        <th className="py-1 sm:py-2 px-1 sm:px-3 text-right font-bold">
                           총 발행량
                         </th>
                       </tr>
@@ -673,15 +751,18 @@ export default function EquitySimulator() {
                     <tbody>
                       {results.cumulativeShares.map((row, idx) => (
                         <tr key={idx} className="border-t border-gray-200">
-                          <td className="py-2 px-3">
+                          <td className="py-1 sm:py-2 px-1 sm:px-3">
                             {row.month === 0
                               ? "시작"
                               : `${monthToYearMonth(row.month)} 말`}
                           </td>
                           {teamMembers.map((member, midx) => (
-                            <td key={midx} className="py-2 px-3 text-right">
-                              {parseInt(row[member.name] || "0")}
-                              <span className="text-xs text-gray-500 ml-1">
+                            <td
+                              key={midx}
+                              className="py-1 sm:py-2 px-1 sm:px-3 text-right"
+                            >
+                              {row[member.name]}
+                              <span className="text-xs text-gray-500 ml-1 hidden sm:inline">
                                 (
                                 {(
                                   (parseFloat(row[member.name] || "0") /
@@ -692,8 +773,8 @@ export default function EquitySimulator() {
                               </span>
                             </td>
                           ))}
-                          <td className="py-2 px-3 text-right font-bold">
-                            {parseInt(row.totalIssued)}
+                          <td className="py-1 sm:py-2 px-1 sm:px-3 text-right font-bold">
+                            {row.totalIssued}
                           </td>
                         </tr>
                       ))}
@@ -704,10 +785,10 @@ export default function EquitySimulator() {
 
               {showingTab === "ownershipChart" && (
                 <div>
-                  <h3 className="text-lg font-medium mb-4">
+                  <h3 className="text-base sm:text-lg font-medium mb-2 sm:mb-4">
                     시간별 지분율 변화
                   </h3>
-                  <div className="h-80">
+                  <div className="h-60 sm:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={results.chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -746,7 +827,7 @@ export default function EquitySimulator() {
                             dataKey={member.name}
                             name={member.name}
                             stroke={member.color}
-                            activeDot={{ r: 8 }}
+                            activeDot={{ r: 6 }}
                             strokeWidth={2}
                           />
                         ))}
@@ -757,28 +838,34 @@ export default function EquitySimulator() {
               )}
 
               {showingTab === "detailData" && (
-                <div className="overflow-x-auto">
-                  <h3 className="text-lg font-medium mb-2">상세 데이터</h3>
+                <div className="overflow-x-auto text-xs sm:text-sm">
+                  <h3 className="text-base sm:text-lg font-medium mb-2">
+                    상세 데이터
+                  </h3>
 
                   {results.monthlySnapshots.map((snapshot, monthIndex) => (
-                    <div key={monthIndex} className="mb-8">
-                      <h4 className="text-md font-semibold mb-2 bg-gray-100 p-2">
+                    <div key={monthIndex} className="mb-4 sm:mb-8">
+                      <h4 className="text-sm sm:text-md font-semibold mb-2 bg-gray-100 p-1 sm:p-2">
                         {monthToYearMonth(snapshot.month)} 말
                       </h4>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 mb-2 sm:mb-4">
                         <div>
-                          <h5 className="text-sm font-medium mb-1">
+                          <h5 className="text-xs sm:text-sm font-medium mb-1">
                             누적 기여 점수
                           </h5>
-                          <table className="w-full text-sm">
+                          <table className="w-full text-xs sm:text-sm">
                             <thead>
                               <tr className="bg-gray-50">
-                                <th className="py-1 px-2 text-left">구성원</th>
-                                <th className="py-1 px-2 text-right">
+                                <th className="py-1 px-1 sm:px-2 text-left">
+                                  구성원
+                                </th>
+                                <th className="py-1 px-1 sm:px-2 text-right">
                                   누적 개월
                                 </th>
-                                <th className="py-1 px-2 text-right">비율</th>
+                                <th className="py-1 px-1 sm:px-2 text-right">
+                                  비율
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -787,8 +874,8 @@ export default function EquitySimulator() {
                                   key={idx}
                                   className="border-t border-gray-100"
                                 >
-                                  <td className="py-1 px-2">
-                                    <div className="flex items-center gap-2">
+                                  <td className="py-1 px-1 sm:px-2">
+                                    <div className="flex items-center gap-1 sm:gap-2">
                                       <div
                                         className="w-2 h-2 rounded-full"
                                         style={{
@@ -798,10 +885,10 @@ export default function EquitySimulator() {
                                       {member.name}
                                     </div>
                                   </td>
-                                  <td className="py-1 px-2 text-right">
+                                  <td className="py-1 px-1 sm:px-2 text-right">
                                     {snapshot.contributionScores[member.name]}
                                   </td>
-                                  <td className="py-1 px-2 text-right">
+                                  <td className="py-1 px-1 sm:px-2 text-right">
                                     {(
                                       snapshot.targetShareRatios[member.name] *
                                       100
@@ -811,31 +898,37 @@ export default function EquitySimulator() {
                                 </tr>
                               ))}
                               <tr className="border-t border-gray-200 font-medium">
-                                <td className="py-1 px-2">합계</td>
-                                <td className="py-1 px-2 text-right">
+                                <td className="py-1 px-1 sm:px-2">합계</td>
+                                <td className="py-1 px-1 sm:px-2 text-right">
                                   {snapshot.totalContribution}
                                 </td>
-                                <td className="py-1 px-2 text-right">100%</td>
+                                <td className="py-1 px-1 sm:px-2 text-right">
+                                  100%
+                                </td>
                               </tr>
                             </tbody>
                           </table>
                         </div>
 
                         <div>
-                          <h5 className="text-sm font-medium mb-1">
+                          <h5 className="text-xs sm:text-sm font-medium mb-1">
                             주식 현황
                           </h5>
-                          <table className="w-full text-sm">
+                          <table className="w-full text-xs sm:text-sm">
                             <thead>
                               <tr className="bg-gray-50">
-                                <th className="py-1 px-2 text-left">구성원</th>
-                                <th className="py-1 px-2 text-right">
+                                <th className="py-1 px-1 sm:px-2 text-left">
+                                  구성원
+                                </th>
+                                <th className="py-1 px-1 sm:px-2 text-right">
                                   신규 발행
                                 </th>
-                                <th className="py-1 px-2 text-right">
+                                <th className="py-1 px-1 sm:px-2 text-right">
                                   누적 보유
                                 </th>
-                                <th className="py-1 px-2 text-right">지분율</th>
+                                <th className="py-1 px-1 sm:px-2 text-right">
+                                  지분율
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -844,8 +937,8 @@ export default function EquitySimulator() {
                                   key={idx}
                                   className="border-t border-gray-100"
                                 >
-                                  <td className="py-1 px-2">
-                                    <div className="flex items-center gap-2">
+                                  <td className="py-1 px-1 sm:px-2">
+                                    <div className="flex items-center gap-1 sm:gap-2">
                                       <div
                                         className="w-2 h-2 rounded-full"
                                         style={{
@@ -855,13 +948,13 @@ export default function EquitySimulator() {
                                       {member.name}
                                     </div>
                                   </td>
-                                  <td className="py-1 px-2 text-right">
+                                  <td className="py-1 px-1 sm:px-2 text-right">
                                     {snapshot.newSharesPerMember[member.name]}
                                   </td>
-                                  <td className="py-1 px-2 text-right">
+                                  <td className="py-1 px-1 sm:px-2 text-right">
                                     {snapshot.cumulativeShares[member.name]}
                                   </td>
-                                  <td className="py-1 px-2 text-right">
+                                  <td className="py-1 px-1 sm:px-2 text-right">
                                     {(
                                       (snapshot.cumulativeShares[member.name] /
                                         snapshot.totalSharesIssued) *
@@ -872,14 +965,16 @@ export default function EquitySimulator() {
                                 </tr>
                               ))}
                               <tr className="border-t border-gray-200 font-medium">
-                                <td className="py-1 px-2">합계</td>
-                                <td className="py-1 px-2 text-right">
+                                <td className="py-1 px-1 sm:px-2">합계</td>
+                                <td className="py-1 px-1 sm:px-2 text-right">
                                   {snapshot.newSharesIssued}
                                 </td>
-                                <td className="py-1 px-2 text-right">
+                                <td className="py-1 px-1 sm:px-2 text-right">
                                   {snapshot.totalSharesIssued}
                                 </td>
-                                <td className="py-1 px-2 text-right">100%</td>
+                                <td className="py-1 px-1 sm:px-2 text-right">
+                                  100%
+                                </td>
                               </tr>
                             </tbody>
                           </table>
@@ -887,8 +982,10 @@ export default function EquitySimulator() {
                       </div>
 
                       <div>
-                        <h5 className="text-sm font-medium mb-1">검증</h5>
-                        <div className="bg-blue-50 p-3 rounded text-sm">
+                        <h5 className="text-xs sm:text-sm font-medium mb-1">
+                          검증
+                        </h5>
+                        <div className="bg-blue-50 p-2 sm:p-3 rounded text-xs sm:text-sm">
                           {teamMembers.map((member, idx) => {
                             // Founders should have at least 10%
                             const expectedMinRatio =
@@ -902,7 +999,7 @@ export default function EquitySimulator() {
                               return (
                                 <div
                                   key={idx}
-                                  className="flex justify-between mb-1"
+                                  className="flex flex-col sm:flex-row sm:justify-between mb-1"
                                 >
                                   <span>
                                     {member.name}: 보유 주식 비율 ={" "}
@@ -939,7 +1036,7 @@ export default function EquitySimulator() {
                             return (
                               <div
                                 key={idx}
-                                className="flex justify-between mb-1"
+                                className="flex flex-col sm:flex-row sm:justify-between mb-1"
                               >
                                 <span>
                                   {member.name}: 보유 주식 비율 ={" "}
