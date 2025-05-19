@@ -77,13 +77,13 @@ export default function EquitySimulator() {
     // Show starting point (month 0)
     simulationResults.cumulativeShares.push({
       month: 0,
-      totalIssued: totalSharesIssued.toFixed(2),
+      totalIssued: totalSharesIssued,
       ...Object.keys(previousMonthShares).reduce(
         (acc, memberName) => {
-          acc[memberName] = previousMonthShares[memberName].toFixed(2);
+          acc[memberName] = previousMonthShares[memberName];
           return acc;
         },
-        {} as Record<string, string>
+        {} as Record<string, number>
       ),
     });
 
@@ -138,7 +138,7 @@ export default function EquitySimulator() {
         }
       });
 
-      totalSharesIssued = Math.max(
+      const tmpTotalSharesIssued = Math.max(
         Math.round(
           previousMonthShares["Founder"] / targetShareRatios["Founder"]
         ),
@@ -150,7 +150,7 @@ export default function EquitySimulator() {
       // Calculate how many shares each member should have based on target ratio
       teamMembers.forEach((member) => {
         targetShares[member.name] = Math.round(
-          targetShareRatios[member.name] * totalSharesIssued
+          targetShareRatios[member.name] * tmpTotalSharesIssued
         );
 
         // Calculate how many new shares needed (we never take shares away)
@@ -161,6 +161,7 @@ export default function EquitySimulator() {
 
         newSharesNeeded += newSharesPerMember[member.name];
       });
+      totalSharesIssued = totalSharesIssued + newSharesNeeded;
 
       // Update previous month shares for next iteration
       teamMembers.forEach((member) => {
@@ -202,14 +203,14 @@ export default function EquitySimulator() {
         month: actualMonthEnd,
         year:
           Math.floor(actualMonthEnd / 12) + (actualMonthEnd % 12 > 0 ? 1 : 0),
-        totalIssued: newSharesNeeded.toFixed(2),
+        totalIssued: newSharesNeeded,
         ...Object.keys(newSharesPerMember).reduce(
           (acc, memberName) => {
-            acc[memberName] = newSharesPerMember[memberName].toFixed(2);
+            acc[memberName] = newSharesPerMember[memberName];
 
             return acc;
           },
-          {} as Record<string, string>
+          {} as Record<string, number>
         ),
       });
 
@@ -218,14 +219,13 @@ export default function EquitySimulator() {
         month: actualMonthEnd,
         year:
           Math.floor(actualMonthEnd / 12) + (actualMonthEnd % 12 > 0 ? 1 : 0),
-        totalIssued: totalSharesIssued.toFixed(2),
+        totalIssued: totalSharesIssued,
         ...Object.keys(previousMonthShares).reduce(
           (acc, memberName) => {
-            acc[memberName] = previousMonthShares[memberName].toFixed(2);
-
+            acc[memberName] = previousMonthShares[memberName];
             return acc;
           },
-          {} as Record<string, string>
+          {} as Record<string, number>
         ),
       });
     });
@@ -994,32 +994,6 @@ export default function EquitySimulator() {
                               snapshot.cumulativeShares[member.name] /
                               snapshot.totalSharesIssued;
 
-                            // Founder checking
-                            if (member.name === "Founder") {
-                              return (
-                                <div
-                                  key={idx}
-                                  className="flex flex-col sm:flex-row sm:justify-between mb-1"
-                                >
-                                  <span>
-                                    {member.name}: 보유 주식 비율 ={" "}
-                                    {(shareRatio * 100).toFixed(2)}%
-                                  </span>
-                                  <span
-                                    className={
-                                      shareRatio >= 0.1
-                                        ? "text-green-600 font-medium"
-                                        : "text-red-600 font-medium"
-                                    }
-                                  >
-                                    {shareRatio >= 0.1
-                                      ? "✓ 10% 이상 보유"
-                                      : `✗ 10% 미만 보유 (${(shareRatio * 100).toFixed(2)}%)`}
-                                  </span>
-                                </div>
-                              );
-                            }
-
                             // Other members
                             const contributionRatio =
                               snapshot.totalContribution > 0
@@ -1029,9 +1003,8 @@ export default function EquitySimulator() {
                                 : 0;
 
                             // Adjusted for real-world rounding errors
-                            const difference = Math.abs(
-                              shareRatio - expectedMinRatio - contributionRatio
-                            );
+                            const difference =
+                              shareRatio - expectedMinRatio - contributionRatio;
 
                             return (
                               <div
@@ -1041,17 +1014,19 @@ export default function EquitySimulator() {
                                 <span>
                                   {member.name}: 보유 주식 비율 ={" "}
                                   {(shareRatio * 100).toFixed(2)}%, 기여도 비율
-                                  = {(contributionRatio * 100).toFixed(2)}%
+                                  = {(contributionRatio * 100).toFixed(2)}%{" "}
+                                  {member.name === "Founder" &&
+                                    " + 창업자 고정 지분 10%"}
                                 </span>
                                 <span
                                   className={
-                                    difference < 0.001
+                                    Math.abs(difference) < 0.01
                                       ? "text-green-600 font-medium"
                                       : "text-red-600 font-medium"
                                   }
                                 >
-                                  {difference < 0.001
-                                    ? "✓ 일치"
+                                  {Math.abs(difference) < 0.01
+                                    ? `✓ 일치 (${(difference * 100).toFixed(2)}%)`
                                     : `✗ 불일치 (${(difference * 100).toFixed(2)}%)`}
                                 </span>
                               </div>
